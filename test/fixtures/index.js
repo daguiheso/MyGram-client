@@ -38,4 +38,4 @@ const fixtures = {
   }
 }
 
-module.export = fixtures
+module.exports = fixtures

@@ -1,12 +1,37 @@
 'use strict'
 
 const test = require('ava')
-// requiriendo archivo index en la raiz
-const mygram = require('../')
-// const fixtures = require('./fixtures')
+const nock = require('nock')
+const mygram = require('../') // requiriendo archivo index en la raiz
+const fixtures = require('./fixtures')
+
+/*
+ * Dado que nuestro proyecto de API tiene diferentes microservicios corriendo (imagenes, users, auth),
+ * esto lo vamos a ver como 3 endpoints diferentes. Localmente si corremos esos microservicios c/u
+ * correra un servidor http en puertos diferentes, asi que necesitamos pasarle a nuestro cliente un
+ * mecanismo para poder definir programaticamente los endpoints, a la hora de lanzar a produccion no
+ * tendremos ese problema ya que todo esto va estar servido bajo ng-nix, osea vamos a tener una capa
+ * http que va ser la encargada de tener todos estos microservices vistos como un solo servicio a la
+ * web externa. Entonces haremos nuestra clase del cliente que sea configurable, que por defecto vaya
+ * a la ruta API que tendremos en produccion pero para poder probar necesitamos definir los diferentes
+ * endpoints como si fueran diferentes microservicios corriendo para garantizar que las peticiones se
+ * estan haciendo bien.
+ */
+// opciones del cliente
+let options = {
+  endpoints: {
+    pictures: 'http://mygram.test/picture',
+    users: 'http://mygram.test/user',
+    auth: 'http://mygram.test/auth'
+  }
+}
+
+test.beforeEach(async t => {
+  t.context.client = mygram.createClient(options)
+})
 
 test('client', t => {
-  const client = mygram.createClient()
+  const client = t.context.client
 
   t.is(typeof client.getPicture, 'function')
   t.is(typeof client.savePicture, 'function')
@@ -16,4 +41,20 @@ test('client', t => {
   t.is(typeof client.saveUser, 'function')
   t.is(typeof client.getUser, 'function')
   t.is(typeof client.auth, 'function')
+})
+
+// implementacion de metodos hibridos
+test('getPicture', async t => {
+  const client = t.context.client
+
+  let image = fixtures.getImage()
+  // nock simulacion http
+  nock(options.endpoints.pictures)
+    .get(`/${image.publicId}`)
+    .reply(200, image) // debera retornar 200 y la img creada
+
+  // ejecucion del cliente
+  let result = await client.getPicture(image.publicId)
+
+  t.deepEqual(image, result)
 })
