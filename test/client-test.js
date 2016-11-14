@@ -100,3 +100,17 @@ test('likePicture', async t => {
 
   t.deepEqual(image, result)
 })
+
+test('listPicture', async t => {
+  const client = t.context.client
+
+  let images = fixtures.getImages(3)
+
+  nock(options.endpoints.pictures)
+    .get('/list')
+    .reply(200, images)
+
+  let result = await client.listPictures()
+
+  t.deepEqual(images, result)
+})
