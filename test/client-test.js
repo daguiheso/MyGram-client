@@ -129,3 +129,23 @@ test('listPictureByTag', async t => {
 
   t.deepEqual(images, result)
 })
+
+test('saveUser', async t => {
+  const client = t.context.client
+
+  let user = fixtures.getUser()
+  let newUser = {
+    username: user.username,
+    name: user.name,
+    email: user.email,
+    password: 'aquaman100'
+  }
+
+  nock(options.endpoints.users)
+    .post('/', newUser)
+    .reply(201, user)
+
+  let result = await client.saveUser(newUser)
+
+  t.deepEqual(result, user)
+})
