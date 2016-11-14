@@ -58,3 +58,29 @@ test('getPicture', async t => {
 
   t.deepEqual(image, result)
 })
+
+test('savePicture', async t => {
+  const client = t.context.client
+
+  // como es una ruta  debemos tener token
+  let token = 'xxx-xxx-xxx'
+  let image = fixtures.getImage()
+  let newImage = {
+    src: image.src,
+    description: image.description
+  }
+
+  // nock simulacion http
+  nock(options.endpoints.pictures, {
+    reqheaders: {
+      'Authorization': `Bearer ${token}`
+    }
+  })
+    .post('/', newImage)
+    .reply(201, image) // debera retornar 200 y la img creada
+
+  // ejecucion del cliente
+  let result = await client.savePicture(newImage, token)
+
+  t.deepEqual(result, image)
+})
